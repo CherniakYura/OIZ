@@ -82,12 +82,29 @@ port.ret <- as.numeric(mat.weight %*% mat.returns);port.ret
 mat.rets <- as.matrix(returns)
 vcov <- cov(mat.rets) * 252
 #vypocet rizika portfolia
-weight.mat <- matrix(rep(w, length(spolocnosti)), nrow = 1)
 
-mat.port.var <- weight.mat %*% vcov %*% t(weight.mat)
+mat.port.var <- mat.weight %*% vcov %*% t(mat.weight)
 mat.port.sd <- sqrt(mat.port.var)
 
 heatmap(vcov, Rowv = NA, Colv = NA, main = "Matica kovariancii")
 
+# 5
+
+data.spy <- load.data("SPY")
+
+ret.spy <- Delt(data.spy$Adjusted)
+
+ret.spy <- na.omit(ret.spy)
+gret.spy <- 1 + ret.spy;
+cret.spy <- cumprod(gret.spy)
+
+plot(x = index(cret.spy),y = cret.spy,xlab = "Date",ylab = "Value of Investment",type = "l",col = "darkgreen",main = "Value of $1 Invested in the S&P 500 index and portfolio")
+lines(x = index(portfolio), y = portfolio,col = "blue")
+abline(h = 1)
+legend("topleft",c("SPY", "My Portfolio"),lty = 1,col = c("darkgreen", "blue"))
+
+# 6
+
 # ///
+
 
