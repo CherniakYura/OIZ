@@ -1,3 +1,3 @@
 # OIZ   
-OIZ class in my university   
+OIZ class in my university    
  
