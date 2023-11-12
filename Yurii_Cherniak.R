@@ -217,5 +217,192 @@ display.roll.alpha.beta(9)
 display.roll.alpha.beta(10)
 
 # 7
+
+mat.ret <- matrix(returns, nrow(returns))
+colnames(mat.ret) <- spolocnosti
+head(mat.ret)
+
+vcov <- cov(mat.ret)
+
+avg.ret <- matrix(apply(mat.ret, 2, mean))
+colnames(avg.ret) <- paste("Avg.Ret")
+rownames(avg.ret) <- paste(spolocnosti)
+avg.ret
+
+min.ret <- min(avg.ret)
+max.ret <- max(avg.ret)
+
+increments <- 100
+
+tgt.ret <- seq(min.ret, max.ret, length = increments)
+head(tgt.ret)
+
+tgt.sd <- rep(0, length = increments)
+
+wgt <- matrix(0, nrow = increments, ncol = length(avg.ret))
+head(wgt)
+
+library(quadprog)
+for (i in 1:increments){
+  Dmat <- 2 * vcov
+  dvec <- c(rep(0, length(avg.ret)))
+  Amat <- cbind(rep(1, length(avg.ret)), avg.ret,
+                diag(1, nrow = ncol(mat.ret)))
+  bvec <- c(1, tgt.ret[i], rep(0, ncol(mat.ret)))
+  soln <- solve.QP(Dmat, dvec, Amat, bvec, meq = 0)
+  tgt.sd[i] <- sqrt(soln$value)
+  wgt[i, ] <- soln$solution
+}
+
+head(tgt.sd)
+
+head(wgt)
+
+tgt.port <- data.frame(cbind(tgt.ret, tgt.sd, wgt))
+names(tgt.port)[c(3:12)] <- paste("w.", spolocnosti, sep="")
+head(tgt.port)
+
+minvar.port <- subset(tgt.port, tgt.sd == min(tgt.sd))
+minvar.port
+
+rf <- 0.0155 / 12
+tgt.port$Sharpe <- (tgt.port$tgt.ret - rf) / tgt.port$tgt.sd
+head(tgt.port)
+
+tangency.port <- subset(tgt.port, Sharpe == max(Sharpe))
+tangency.port
+
+eff.frontier <- subset(tgt.port, tgt.ret >= max(minvar.port$tgt.ret))
+dim(eff.frontier)
+head(eff.frontier)
+
+plot(x = tgt.sd,
+     xlab = "Portfolio Risk",
+     y = tgt.ret,
+     ylab = "Portfolio Return",
+     col = "blue",
+     main = "Mean--Variance Efficient Frontier of Two Assets
+(Based on the Quadratic Programming Approach)")
+
+points(x = eff.frontier$tgt.sd,
+       col = "blue",
+       y = eff.frontier$tgt.ret, pch = 16)
+
+points(x = minvar.port$tgt.sd,
+       y = minvar.port$tgt.ret,
+       col = "red",
+       pch = 15, cex = 2.5)
+
+points(x = tangency.port$tgt.sd,
+       y = tangency.port$tgt.ret,
+       col = "darkgreen",
+       pch = 17, cex = 2.5)
+
+min.risk.w <- subset(minvar.port, tgt.ret >= max(minvar.port$tgt.ret))[3:length(colnames(minvar.port))]
+
 # ///
+mat.ret <- matrix(rets, nrow(rets))
+colnames(mat.ret) <- spolocnosti
+head.tail(mat.ret)
+
+#Krok 2:
+vcov <- cov(mat.ret)
+
+#Krok 3: vytvorenie vektora vynosnosti pre tangencialne portfolio
+avg.ret <- matrix(apply(mat.ret, 2, mean))
+colnames(avg.ret) <- paste("Avg.Ret")
+rownames(avg.ret) <- paste(c("SPY","IGLB"))
+avg.ret
+
+min.ret <- min(avg.ret)
+max.ret <- max(avg.ret)
+
+increments <- 100
+
+tgt.ret <- seq(min.ret, max.ret, length = increments)
+head.tail(tgt.ret)
+
+#Krok 4: vytvorenie smerodajnej odchylky docasneho portfolia
+tgt.sd <- rep(0, length = increments)
+
+#Krok 5: vytvorenie docasnych vah portfolia
+wgt <- matrix(0, nrow = increments, ncol = length(avg.ret))
+head.tail(wgt)
+
+#Krok 6: spustenie optimalizacie cez balik quadprog
+library(quadprog)
+for (i in 1:increments){
+  Dmat <- 2 * vcov
+  dvec <- c(rep(0, length(avg.ret)))
+  Amat <- cbind(rep(1, length(avg.ret)), avg.ret,
+                diag(1, nrow = ncol(mat.ret)))
+  bvec <- c(1, tgt.ret[i], rep(0, ncol(mat.ret)))
+  soln <- solve.QP(Dmat, dvec, Amat, bvec, meq = 2)
+  tgt.sd[i] <- sqrt(soln$value)
+  wgt[i, ] <- soln$solution
+}
+head.tail(tgt.sd)
+
+head.tail(wgt)
+#Krok 7: spojit vynosnosti, smerodajne odchylky a vahy portfolia
+tgt.port <- data.frame(cbind(tgt.ret, tgt.sd, wgt))
+names(tgt.port)[c(3, 4)] <- c("w.SPY", "w.IGLB")
+head.tail(tgt.port)
+
+#Krok 8: identifikovat portfolio s minimalnym rozptylom
+minvar.port <- subset(tgt.port, tgt.sd == min(tgt.sd))
+minvar.port
+
+#Krok 9: identifikovat tangencialne portfolio
+tgt.port$Sharpe <- (tgt.port$tgt.ret - rf) / tgt.port$tgt.sd
+head.tail(tgt.port)
+
+tangency.port <- subset(tgt.port, Sharpe == max(Sharpe))
+tangency.port
+
+#Krok 10: identifikovat efektivne portfolia
+eff.frontier <- subset(tgt.port, tgt.ret >= minvar.port$tgt.ret)
+dim(eff.frontier)
+head.tail(eff.frontier)
+
+#Krok 11: zobrazit efektivne M-V portfolia
+plot(x = tgt.sd,
+     xlab = "Portfolio Risk",
+     y = tgt.ret,
+     ylab = "Portfolio Return",
+     col = "blue",
+     main = "Mean--Variance Efficient Frontier of Two Assets
+(Based on the Quadratic Programming Approach)")
+
+points(x = eff.frontier$tgt.sd,
+       col = "blue",
+       y = eff.frontier$tgt.ret, pch = 16)
+
+points(x = minvar.port$tgt.sd,
+       y = minvar.port$tgt.ret,
+       col = "red",
+       pch = 15, cex = 2.5)
+
+points(x = tangency.port$tgt.sd,
+       y = tangency.port$tgt.ret,
+       col = "darkgreen",
+       pch = 17, cex = 2.5)
+
+#vykreslenie vytvorenych portfolii cez A a B sposob
+plot(x = port$Port.Risk,
+     xlab = "Portfolio Risk",
+     y = port$Port.Ret,
+     ylab = "Portfolio Return",
+     type = "l",
+     lwd = 6,
+     lty = 3,
+     main = "Mean--Variance Efficient Frontier of Two Assets
+ Comparing Both Approaches")
+lines(x = tgt.sd, y = tgt.ret, col = "red", type = "l", lwd = 2)
+legend("bottomright",
+       c("The Long Way", "Quadratic Programming"),
+       col = c("black", "red"),
+       lty = c(3, 1),
+       lwd = c(6, 2))
+
 
