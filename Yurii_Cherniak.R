@@ -300,109 +300,35 @@ points(x = tangency.port$tgt.sd,
 
 min.risk.w <- subset(minvar.port, tgt.ret >= max(minvar.port$tgt.ret))[3:length(colnames(minvar.port))]
 
-# ///
-mat.ret <- matrix(rets, nrow(rets))
-colnames(mat.ret) <- spolocnosti
-head.tail(mat.ret)
+# calculate min.risk.rets
 
-#Krok 2:
-vcov <- cov(mat.ret)
+rets <- lapply(data, function(x) Delt(x$data.raw.Adjusted))
 
-#Krok 3: vytvorenie vektora vynosnosti pre tangencialne portfolio
-avg.ret <- matrix(apply(mat.ret, 2, mean))
-colnames(avg.ret) <- paste("Avg.Ret")
-rownames(avg.ret) <- paste(c("SPY","IGLB"))
-avg.ret
+returns <- do.call(cbind, rets);
+returns <- returns[-1,]
+returns <- na.omit(returns)
+names(returns) <- spolocnosti
 
-min.ret <- min(avg.ret)
-max.ret <- max(avg.ret)
+port.ret <- 1 + returns
+cum.ret <- cumprod(port.ret)
 
-increments <- 100
+portfolio <- rep(0, nrow(cum.ret))
 
-tgt.ret <- seq(min.ret, max.ret, length = increments)
-head.tail(tgt.ret)
-
-#Krok 4: vytvorenie smerodajnej odchylky docasneho portfolia
-tgt.sd <- rep(0, length = increments)
-
-#Krok 5: vytvorenie docasnych vah portfolia
-wgt <- matrix(0, nrow = increments, ncol = length(avg.ret))
-head.tail(wgt)
-
-#Krok 6: spustenie optimalizacie cez balik quadprog
-library(quadprog)
-for (i in 1:increments){
-  Dmat <- 2 * vcov
-  dvec <- c(rep(0, length(avg.ret)))
-  Amat <- cbind(rep(1, length(avg.ret)), avg.ret,
-                diag(1, nrow = ncol(mat.ret)))
-  bvec <- c(1, tgt.ret[i], rep(0, ncol(mat.ret)))
-  soln <- solve.QP(Dmat, dvec, Amat, bvec, meq = 2)
-  tgt.sd[i] <- sqrt(soln$value)
-  wgt[i, ] <- soln$solution
+for (i in 1:length(min.risk.w)) {
+  portfolio <- portfolio + cum.ret[, i] * min.risk.w[1, i]
 }
-head.tail(tgt.sd)
+names(portfolio) <- c("min.risk.rets")
 
-head.tail(wgt)
-#Krok 7: spojit vynosnosti, smerodajne odchylky a vahy portfolia
-tgt.port <- data.frame(cbind(tgt.ret, tgt.sd, wgt))
-names(tgt.port)[c(3, 4)] <- c("w.SPY", "w.IGLB")
-head.tail(tgt.port)
+data.spy <- load.data("SPY")
 
-#Krok 8: identifikovat portfolio s minimalnym rozptylom
-minvar.port <- subset(tgt.port, tgt.sd == min(tgt.sd))
-minvar.port
+ret.spy <- Delt(data.spy$data.raw.Adjusted)
 
-#Krok 9: identifikovat tangencialne portfolio
-tgt.port$Sharpe <- (tgt.port$tgt.ret - rf) / tgt.port$tgt.sd
-head.tail(tgt.port)
+ret.spy <- na.omit(ret.spy)
+gret.spy <- 1 + ret.spy;
+cret.spy <- cumprod(gret.spy)
 
-tangency.port <- subset(tgt.port, Sharpe == max(Sharpe))
-tangency.port
-
-#Krok 10: identifikovat efektivne portfolia
-eff.frontier <- subset(tgt.port, tgt.ret >= minvar.port$tgt.ret)
-dim(eff.frontier)
-head.tail(eff.frontier)
-
-#Krok 11: zobrazit efektivne M-V portfolia
-plot(x = tgt.sd,
-     xlab = "Portfolio Risk",
-     y = tgt.ret,
-     ylab = "Portfolio Return",
-     col = "blue",
-     main = "Mean--Variance Efficient Frontier of Two Assets
-(Based on the Quadratic Programming Approach)")
-
-points(x = eff.frontier$tgt.sd,
-       col = "blue",
-       y = eff.frontier$tgt.ret, pch = 16)
-
-points(x = minvar.port$tgt.sd,
-       y = minvar.port$tgt.ret,
-       col = "red",
-       pch = 15, cex = 2.5)
-
-points(x = tangency.port$tgt.sd,
-       y = tangency.port$tgt.ret,
-       col = "darkgreen",
-       pch = 17, cex = 2.5)
-
-#vykreslenie vytvorenych portfolii cez A a B sposob
-plot(x = port$Port.Risk,
-     xlab = "Portfolio Risk",
-     y = port$Port.Ret,
-     ylab = "Portfolio Return",
-     type = "l",
-     lwd = 6,
-     lty = 3,
-     main = "Mean--Variance Efficient Frontier of Two Assets
- Comparing Both Approaches")
-lines(x = tgt.sd, y = tgt.ret, col = "red", type = "l", lwd = 2)
-legend("bottomright",
-       c("The Long Way", "Quadratic Programming"),
-       col = c("black", "red"),
-       lty = c(3, 1),
-       lwd = c(6, 2))
-
+plot(x = index(cret.spy),y = cret.spy,xlab = "Date",ylab = "Value of Investment",type = "l",col = "darkgreen",main = "Value of $1 Invested in the S&P 500 index and portfolio")
+lines(x = index(portfolio), y = portfolio,col = "blue")
+abline(h = 1)
+legend("topleft",c("SPY", "My Portfolio"),lty = 1,col = c("darkgreen", "blue"))
 
