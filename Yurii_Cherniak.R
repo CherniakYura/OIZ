@@ -249,7 +249,7 @@ for (i in 1:increments){
   Amat <- cbind(rep(1, length(avg.ret)), avg.ret,
                 diag(1, nrow = ncol(mat.ret)))
   bvec <- c(1, tgt.ret[i], rep(0, ncol(mat.ret)))
-  soln <- solve.QP(Dmat, dvec, Amat, bvec, meq = 0)
+  soln <- solve.QP(Dmat, dvec, Amat, bvec, meq = 1)
   tgt.sd[i] <- sqrt(soln$value)
   wgt[i, ] <- soln$solution
 }
