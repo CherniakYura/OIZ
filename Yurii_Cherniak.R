@@ -86,12 +86,15 @@ names(returns) <- spolocnosti
 port.ret <- 1 + returns
 cum.ret <- cumprod(port.ret)
 
-portfolio <- rep(0, nrow(cum.ret))
+rovnovazne.portfolio <- rep(0, nrow(cum.ret))
 
 for (i in 1:length(weight)) {
-  portfolio <- portfolio + cum.ret[, i] * weight[i]
+  rovnovazne.portfolio <- rovnovazne.portfolio + cum.ret[, i] * weight[i]
 }
-names(portfolio) <- c("cum.ret.portfolio")
+names(rovnovazne.portfolio) <- c("cum.ret.portfolio")
+
+plot(x=index(rovnovazne.portfolio),y=rovnovazne.portfolio,xlab="Date",ylab="Vynos",type="l",col="blue",main="Rovnovazne portfolio vynosnost")
+abline(h=1, col="black")
 
 cum.ret <- na.omit(cum.ret)
 cum.ret <- cum.ret[nrow(cum.ret)] - 1
@@ -120,8 +123,8 @@ ret.spy <- na.omit(ret.spy)
 gret.spy <- 1 + ret.spy;
 cret.spy <- cumprod(gret.spy)
 
-plot(x = index(cret.spy),y = cret.spy,xlab = "Date",ylab = "Value of Investment",type = "l",col = "darkgreen",main = "Value of $1 Invested in the S&P 500 index and portfolio")
-lines(x = index(portfolio), y = portfolio,col = "blue")
+plot(x = index(cret.spy),y = cret.spy,xlab = "Date",ylab = "Value of Investment",type = "l",col = "darkgreen",main = "Value of $1 Invested in the S&P 500 index and rovnovazne portfolio")
+lines(x = index(rovnovazne.portfolio), y = rovnovazne.portfolio,col = "blue")
 abline(h = 1)
 legend("topleft",c("SPY", "My Portfolio"),lty = 1,col = c("darkgreen", "blue"))
 
@@ -281,8 +284,7 @@ plot(x = tgt.sd,
      y = tgt.ret,
      ylab = "Portfolio Return",
      col = "blue",
-     main = "Mean--Variance Efficient Frontier of Two Assets
-(Based on the Quadratic Programming Approach)")
+     main = "Mean--Variance Efficient Frontier of my assets")
 
 points(x = eff.frontier$tgt.sd,
        col = "blue",
@@ -301,8 +303,6 @@ points(x = tangency.port$tgt.sd,
 min.risk.w <- subset(minvar.port, tgt.ret >= max(minvar.port$tgt.ret))[3:length(colnames(minvar.port))]
 
 # calculate min.risk.rets
-
-rets <- lapply(data, function(x) Delt(x$data.raw.Adjusted))
 
 returns <- do.call(cbind, rets);
 returns <- returns[-1,]
@@ -329,6 +329,7 @@ cret.spy <- cumprod(gret.spy)
 
 plot(x = index(cret.spy),y = cret.spy,xlab = "Date",ylab = "Value of Investment",type = "l",col = "darkgreen",main = "Value of $1 Invested in the S&P 500 index and portfolio")
 lines(x = index(portfolio), y = portfolio,col = "blue")
+lines(x = index(rovnovazne.portfolio), y = rovnovazne.portfolio,col = "red")
 abline(h = 1)
-legend("topleft",c("SPY", "My Portfolio"),lty = 1,col = c("darkgreen", "blue"))
+legend("topleft",c("SPY", "Effective Portfolio", "Rovnovazne Portfolio"),lty = 1,col = c("darkgreen", "blue", "red"))
 
