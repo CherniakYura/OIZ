@@ -1,6 +1,6 @@
 library("quantmod")
 library("xts")
-
+ 
 library(quantmod)
 load.data <- function(ticker){
   data.raw <- read.csv(paste("./data/", ticker,"_Yahoo.csv", sep = ""), header = TRUE)
